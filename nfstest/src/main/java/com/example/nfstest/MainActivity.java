@@ -112,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
             String hexStr=StringUtil.toHexString(tag.getId());
             String text=StringUtil.hex2Decimal(hexStr);
             return "["+hexStr+"],["+text+"]";
-//            return StringUtil.toHexString(tag.getId());
         }
         catch (Exception e) {
             e.printStackTrace();
