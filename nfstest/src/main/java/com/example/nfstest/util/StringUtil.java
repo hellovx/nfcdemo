@@ -1,5 +1,7 @@
 package com.example.nfstest.util;
 
+import android.widget.TextView;
+
 public class StringUtil {
     private static final char[] HEX_EXCHANGE = { '0', '1', '2', '3', '4', '5', '6',
             '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
@@ -47,5 +49,13 @@ public class StringUtil {
         }
 
         return decimal;
+    }
+
+    public static void setLog(TextView text,String str){
+        text.append(str+"\n");
+        int offset=text.getLineCount()*text.getLineHeight();
+        if(offset>text.getHeight()){
+            text.scrollTo(0,offset-text.getHeight());
+        }
     }
 }

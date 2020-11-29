@@ -11,6 +11,7 @@ import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
+import android.nfc.tech.MifareClassic;
 import android.nfc.tech.NfcA;
 import android.nfc.tech.NfcF;
 import android.nfc.tech.NfcV;
@@ -24,9 +25,11 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.nfstest.util.NfcUtil;
 import com.example.nfstest.util.StringUtil;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 public class MainActivity extends AppCompatActivity {
@@ -43,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         text = findViewById(R.id.txtShow);
         text.setMovementMethod(ScrollingMovementMethod.getInstance());
+        Log.v("t1","hello im msg");
         setLog("hello world");
 
         //
@@ -62,6 +66,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        //setLog("TAGTYPES:" + intent.getParcelableExtra(NfcAdapter.EXTRA_TAG));
+        String text=readFromTag(intent);
+        resolveIntent(intent);
+        if(null==text){
+            setLog("ERROR:获取tag内容错误");
+        }else{
+            setLog("TAGTEXT:"+text);
+        }
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(null!=nfcAdapter){
+            nfcAdapter.enableForegroundDispatch(this, pendingIntent,filters,techLists);
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(null!=nfcAdapter) {
+            nfcAdapter.disableForegroundDispatch(this);
+        }
+    }
 
 
     /**
@@ -83,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //nfc初始化过滤事件
     private void nfcInit() {
         //setLog("init:in");
         //
@@ -128,16 +161,43 @@ public class MainActivity extends AppCompatActivity {
             setLog("ACTION_NDEF_DISCOVERED");
         }else if(NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)){
             setLog("ACTION_TECH_DISCOVERED");
-           Tag tag= intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
-            String[] temp = tag.getTechList();
-            for (String s : temp) {
-               setLog("resolveIntent tag: " + s);
+            Tag tag= intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            String[] tempTechs = tag.getTechList();
+            for (String s : tempTechs) {
+                setLog("resolveIntent tag: " + s);
             }
             Parcelable[] rawMessage = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
             if(null!=rawMessage){
                 setLog("getNdefMsg: ndef格式 ");
             }else{
                 setLog("getNdefMsg: unkonwn ");
+                if(NfcUtil.supportedTechs(tempTechs)){
+                    MifareClassic mfc= MifareClassic.get(tag);
+                    if(null!=mfc){
+                        setLog("getMfc:mfcInfo");
+                        try {
+//                            mfc.connect();
+//                            int secount=mfc.getSectorCount();
+//                            for(int i=0;i<secount;i++){
+//                                if(mfc.authenticateSectorWithKeyA(i,MifareClassic.KEY_DEFAULT)||mfc.authenticateSectorWithKeyA(i,MifareClassic.KEY_NFC_FORUM)){
+//                                    setLog(i+"getMfc:密码正确");
+//                                }else {
+//                                    setLog(i+"getMfc:密码错误");
+//                                }
+//                            }
+
+                             String str= NfcUtil.readMifareClassicTag(tag,text);
+                            setLog("mfc内容："+str);
+                        } catch (Exception e) {
+                            setLog("getMfc:mfc连接读取异常");
+                            e.printStackTrace();
+                        }
+
+                    }else{
+                        setLog("getMfc:mfc不存在");
+                    }
+                }
+
             }
 
 
@@ -147,33 +207,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    @Override
-    protected void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        //setLog("TAGTYPES:" + intent.getParcelableExtra(NfcAdapter.EXTRA_TAG));
-        String text=readFromTag(intent);
-        resolveIntent(intent);
-        if(null==text){
-            setLog("ERROR:获取tag内容错误");
-        }else{
-            setLog("TAGTEXT:"+text);
-        }
-    }
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if(null!=nfcAdapter){
-            nfcAdapter.enableForegroundDispatch(this, pendingIntent,filters,techLists);
-        }
-    }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if(null!=nfcAdapter) {
-            nfcAdapter.disableForegroundDispatch(this);
-        }
-    }
 
     private void setLog(String str){
         text.append(str+"\n");
